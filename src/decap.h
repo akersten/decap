@@ -13,7 +13,8 @@ extern "C" {
 
     /**
      * Reads header information about a pcap file. Also does basic verification
-     * of the file (checking magic number, etc.)
+     * of the file (checking magic number, etc.) This will allocate space for
+     * a `pcap_header` struct as well. Be sure to unload the file when finished.
      * 
      * @param fd An open file descriptor to a pcap file.
      * @param pcapFile Fill-in target.
@@ -26,6 +27,14 @@ extern "C" {
      */
     int load(int fd, pcap_file* pcapFile, int fixedSize);
     
+    /**
+     * Deallocates any memory used by the referenced pcap_file struct. Not
+     * responsible for closing the file handle (just like load isn't resposible
+     * for opening a file handle).
+     * 
+     * @param pcapFile The pcap file to unload.
+     * @return Should always be non-zero.
+     */
     int unload(pcap_file* pcapFile);
     
     
@@ -40,6 +49,12 @@ extern "C" {
      */
     int more(pcap_file* pcapFile);
     
+    /**
+     * Finds every packet header in the pcap file and prints it.
+     * 
+     * @param pcapFile The file to enumerate.
+     * @return Non-zero on success.
+     */
     int debugAll(pcap_file* pcapFile);
     
     

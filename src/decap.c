@@ -17,7 +17,6 @@ int load(int fd, pcap_file* pcapFile, int fixedSize) {
     //If the file is fixed-size, set the length.
     if (fixedSize) {
         pcapFile->fixedSize = lseek(fd, 0, SEEK_END);
-        printf("Fixed size length is %d\n", pcapFile->fixedSize);
         lseek(fd, 0, SEEK_SET);
     } else {
         pcapFile->fixedSize = 0;
@@ -25,29 +24,21 @@ int load(int fd, pcap_file* pcapFile, int fixedSize) {
 
 
     pcapFile->fd = fd;
-
     pcapFile->header = malloc(sizeof (pcap_header));
-
 
 
     //Read the header and make sure we found the expected number of bytes.
     int headerBytesRead =
             read(pcapFile->fd, pcapFile->header, sizeof (pcap_header));
 
-    if (headerBytesRead == -1) {
-        fprintf(stderr, "errno set: %s\n", strerror(errno));
-        return 0;
-    }
-
     if (headerBytesRead != sizeof (pcap_header)) {
-        fprintf(stderr, "Read %d bytes but expected %d\n", headerBytesRead, sizeof (pcap_header));
+        fprintf(stderr, "During header read, read %d bytes but expected %d.\n",
+                headerBytesRead, sizeof (pcap_header));
         return 0;
     }
-
 
 
     //Read the magic number and infer the precision from it.
-
     uint32_t mn = pcapFile->header->magic_number;
     pcapFile->nanoResolution = 0;
 
@@ -65,7 +56,6 @@ int load(int fd, pcap_file* pcapFile, int fixedSize) {
             //matches the platform endian-ness that we're reading it from, this
             //won't be a problem.
             //Otherwise, we'll need to do some extra work to flip bits.
-
             fprintf(stderr,
                     "Endian-flipped captures not supported yet.\n");
             return 0;
@@ -80,6 +70,15 @@ int load(int fd, pcap_file* pcapFile, int fixedSize) {
     return 1;
 }
 
+int unload(pcap_file* pcapFile) {
+    if (pcapFile == NULL) {
+        return 0;
+    }
+
+    free(pcapFile->header);
+    return 1;
+}
+
 int readPacket(pcap_file* pcapFile, pcap_packet_header* packetHeader,
         pcap_packet_data* packetData) {
     return 0;
@@ -88,10 +87,9 @@ int readPacket(pcap_file* pcapFile, pcap_packet_header* packetHeader,
 int more(pcap_file* pcapFile) {
     off_t cur = lseek(pcapFile->fd, 0, SEEK_CUR);
 
-      
+
     //Speed optimization if the file isn't going to grow.
     if (pcapFile->fixedSize) {
-          printf("Comparing %d and %d\n", cur, pcapFile->fixedSize);
         return cur != pcapFile->fixedSize;
     }
 
@@ -101,7 +99,6 @@ int more(pcap_file* pcapFile) {
     //And restore the position.
     lseek(pcapFile->fd, cur, SEEK_SET);
 
-    printf("Comparing %d and %d\n", cur, end);
     return (cur != end);
 }
 
@@ -111,11 +108,13 @@ int debugAll(pcap_file* pcapFile) {
 
     pcap_packet_header* pph = malloc(sizeof (pcap_packet_header));
 
-    //Read until we can't anymore
+    //Read until we can't anymore.
     while (more(pcapFile)) {
         //Position should be pointing to the next header...
-        if (read(pcapFile->fd, pph, sizeof (pcap_packet_header)) != sizeof (pcap_packet_header)) {
-            printf("Hit EOF!\n");
+        if (read(pcapFile->fd, pph, sizeof (pcap_packet_header))
+                != sizeof (pcap_packet_header)) {
+            fprintf(stderr,
+                    "Hit EOF, but should have seen it coming.\n");
             break;
         }
 
