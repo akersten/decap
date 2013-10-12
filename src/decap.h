@@ -10,6 +10,7 @@ extern "C" {
 #endif
     
 off_t get();
+size_t 
 
 #ifdef	__cplusplus
 }

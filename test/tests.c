@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 int assertE(int a, int b) {
     return a == b;
@@ -29,11 +30,15 @@ void summarize() {
 }
 
 int main(int argc, char** argv) {
-    printf("decap %s\nRunning tests...\n", __TIME__);
+    printf("decap %s %s\nRunning tests...\n", __TIME__, __DATE__);
     
     
     test("Size of off_t must be > 4",
             assertE(sizeof(off_t) > (size_t) 4, 1));
+    test("Size of size_t must be > 4",
+            assertE(sizeof(size_t) > (size_t) 4, 1));
+    test("Size of uint32_t is 4", assertE(sizeof(uint32_t), 4));
+    test("Size of uint16_t is 2", assertE(sizeof(uint16_t), 2));
     
     summarize();
     

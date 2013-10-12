@@ -1,4 +1,5 @@
 decap
 =====
 
-Library for extracting packets or files from pcap files.
+Library for extracting packet offsets and file information from packet captures
+in the pcap format (not pcap-ng).
