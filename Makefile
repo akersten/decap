@@ -3,7 +3,7 @@ all:
 	mkdir -p lib
 	gcc -shared *.o -o lib/libdecap.so
 tests:
-	gcc -g -o runtests test/*.c
+	gcc -g -o runtests test/*.c src/*.c
 	./runtests
 
 clean:

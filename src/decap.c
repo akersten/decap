@@ -1,5 +1,130 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 #include "decap.h"
+#include "pcapfile.h"
 
+int load(int fd, pcap_file* pcapFile, int fixedSize) {
+    if (fd < 0) {
+        return 0;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+
+    //If the file is fixed-size, set the length.
+    if (fixedSize) {
+        pcapFile->fixedSize = lseek(fd, 0, SEEK_END);
+        printf("Fixed size length is %d\n", pcapFile->fixedSize);
+        lseek(fd, 0, SEEK_SET);
+    } else {
+        pcapFile->fixedSize = 0;
+    }
+
+
+    pcapFile->fd = fd;
+
+    pcapFile->header = malloc(sizeof (pcap_header));
+
+
+
+    //Read the header and make sure we found the expected number of bytes.
+    int headerBytesRead =
+            read(pcapFile->fd, pcapFile->header, sizeof (pcap_header));
+
+    if (headerBytesRead == -1) {
+        fprintf(stderr, "errno set: %s\n", strerror(errno));
+        return 0;
+    }
+
+    if (headerBytesRead != sizeof (pcap_header)) {
+        fprintf(stderr, "Read %d bytes but expected %d\n", headerBytesRead, sizeof (pcap_header));
+        return 0;
+    }
+
+
+
+    //Read the magic number and infer the precision from it.
+
+    uint32_t mn = pcapFile->header->magic_number;
+    pcapFile->nanoResolution = 0;
+
+    switch (mn) {
+        case 0xa1b23c4d:
+            pcapFile->nanoResolution = 1;
+        case 0xa1b2c3d4:
+            pcapFile->bytesNeedFlipping = 0;
+            break;
+        case 0x4d3cb2a1:
+            pcapFile->nanoResolution = 1;
+        case 0xd4c3b2a1:
+            pcapFile->bytesNeedFlipping = 1;
+            //TODO: Basically, if the platform that the pcap was created on
+            //matches the platform endian-ness that we're reading it from, this
+            //won't be a problem.
+            //Otherwise, we'll need to do some extra work to flip bits.
+
+            fprintf(stderr,
+                    "Endian-flipped captures not supported yet.\n");
+            return 0;
+
+            break;
+        default:
+            fprintf(stderr,
+                    "This isn't a pcap file.\n");
+            return 0;
+    }
+
+    return 1;
+}
+
+int readPacket(pcap_file* pcapFile, pcap_packet_header* packetHeader,
+        pcap_packet_data* packetData) {
+    return 0;
+}
+
+int more(pcap_file* pcapFile) {
+    off_t cur = lseek(pcapFile->fd, 0, SEEK_CUR);
+
+      
+    //Speed optimization if the file isn't going to grow.
+    if (pcapFile->fixedSize) {
+          printf("Comparing %d and %d\n", cur, pcapFile->fixedSize);
+        return cur != pcapFile->fixedSize;
+    }
+
+    //Otherwise, we have to find the end of the file every time.
+    off_t end = lseek(pcapFile->fd, 0, SEEK_END);
+
+    //And restore the position.
+    lseek(pcapFile->fd, cur, SEEK_SET);
+
+    printf("Comparing %d and %d\n", cur, end);
+    return (cur != end);
+}
+
+int debugAll(pcap_file* pcapFile) {
+    printFile(pcapFile);
+    printFileHeader(pcapFile->header);
+
+    pcap_packet_header* pph = malloc(sizeof (pcap_packet_header));
+
+    //Read until we can't anymore
+    while (more(pcapFile)) {
+        //Position should be pointing to the next header...
+        if (read(pcapFile->fd, pph, sizeof (pcap_packet_header)) != sizeof (pcap_packet_header)) {
+            printf("Hit EOF!\n");
+            break;
+        }
+
+        printPacketHeader(pph);
+
+        //Advance by that much...
+        lseek(pcapFile->fd, pph->incl_len, SEEK_CUR);
+    }
+
+    free(pph);
+    return 1;
+}
