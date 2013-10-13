@@ -13,6 +13,7 @@ libtests:
 
 clean:
 	rm -f runtests
+	rm -f runtestslinked
 	rm -f lib/*.so
 	if test -d lib; then rmdir lib;	fi
 
