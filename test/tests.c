@@ -12,18 +12,42 @@
 
 #include "../src/decap.h"
 
+/**
+ * Assert equality.
+ * 
+ * @param a Value a.
+ * @param b Value b.
+ * @return a == b
+ */
 int assertE(int a, int b) {
     return a == b;
 }
 
+/**
+ * Assert inequality.
+ * 
+ * @param a Value a.
+ * @param b Value b.
+ * @return a != b
+ */
 int assertNE(int a, int b) {
     return a != b;
 }
 
+/*
+ * The poor-man's test suite.
+ */
 int passCount = 0;
 int failCount = 0;
 
-int test(char* name, int passed) {
+/**
+ * Records a test as a pass or failure and prints out the corresponding message.
+ * Increments passCount or failCount.
+ * 
+ * @param name The name of the test.
+ * @param passed Whether the test passed or not.
+ */
+void test(char* name, int passed) {
     printf("[%s]\t%s\n", passed ? "PASS" : "FAIL", name);
     if (passed)
         passCount++;
@@ -31,6 +55,9 @@ int test(char* name, int passed) {
         failCount++;
 }
 
+/**
+ * Prints the summary of the executed tests.
+ */
 void summarize() {
     if (!failCount) {
         printf("\nALL TESTS PASSED\n");
@@ -39,6 +66,11 @@ void summarize() {
     }
 }
 
+/**
+ * Just test some elementary features of decap. Makes sure nothing breaks when 
+ * doing routine operations, enforces assumptions about type lengths, and
+ * exemplifies the usage of the library.
+ */
 int main(int argc, char** argv) {
     printf("decap %s %s\nRunning tests...\n", __TIME__, __DATE__);
 
