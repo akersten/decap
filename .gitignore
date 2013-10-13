@@ -1,3 +1,5 @@
 /nbproject/
 /nocommit/
-/runtests
+/lib/
+/runtests/
+*.o
