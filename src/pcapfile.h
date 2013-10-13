@@ -26,18 +26,6 @@ extern "C" {
     } pcap_header;
 
     typedef struct {
-        uint32_t ts_sec; /* timestamp seconds */
-        uint32_t ts_usec; /* timestamp microseconds */
-        uint32_t incl_len; /* number of octets of packet saved in file */
-        uint32_t orig_len; /* actual length of packet */
-    } pcap_packet_header;
-
-    typedef struct {
-        uint32_t size;
-        uint8_t* data;
-    } pcap_packet_data;
-
-    typedef struct {
         int fd;
         int bytesNeedFlipping; /* If the file was created on a platform whose
                                 * endian-ness is opposite to this one, in which
@@ -52,7 +40,31 @@ extern "C" {
         pcap_header* header;
     } pcap_file;
 
+    typedef struct {
+        uint32_t size;
+        uint8_t* data;
+    } pcap_packet_data;
+
+    typedef struct {
+        uint32_t ts_sec; /* timestamp seconds */
+        uint32_t ts_usec; /* timestamp microseconds */
+        uint32_t incl_len; /* number of octets of packet saved in file */
+        uint32_t orig_len; /* actual length of packet */
+    } pcap_packet_header;
+
+    /**
+     Separate definition, because adding things to pcap_packet_header would
+     change its length, which we use to read things directly from the files...
+     */
+    typedef struct {
+        pcap_packet_header header;
+        pcap_packet_data payload; 
+    } pcap_packet;
+
+
+
     void printPacketHeader(pcap_packet_header* header);
+    void printPacketData(pcap_packet_data* header);
     void printFileHeader(pcap_header* header);
     void printFile(pcap_file* header);
 

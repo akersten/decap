@@ -3,6 +3,9 @@
 
 #include "pcapfile.h"
 
+int isPrintable(char c) {
+    return (c >= 32) && (c <= 126);
+}
 void printPacketHeader(pcap_packet_header* header) {
     printf("--- PACKET ---\n");
     printf("Seconds: %d\n", header->ts_sec);
@@ -10,6 +13,25 @@ void printPacketHeader(pcap_packet_header* header) {
     printf("Incl_len: %d\n", header->incl_len);
     printf("Orig_len: %d\n", header->orig_len);
 
+}
+
+void printPacketData(pcap_packet_data* data) {
+    printf("--- PACKET DATA ---\n");
+    printf("Size: %d\n", data->size);
+    printf("Data (ASCII):\n");
+    printf("\t");
+    int i = 0;
+    for (i = 0; i < data->size; i++) {
+        if (isPrintable(data->data[i])) {
+        printf("%c", data->data[i]);
+        }else {
+            printf(".");
+        }
+        if ((i > 99) && (i % 100 == 0)) {
+            printf("\n");
+        }
+    }
+    printf("\n");
 }
 
 void printFileHeader(pcap_header* header) {

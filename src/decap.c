@@ -75,13 +75,51 @@ int unload(pcap_file* pcapFile) {
         return 0;
     }
 
+
     free(pcapFile->header);
+    return 1;
+
+}
+
+int readPacket(pcap_file* pcapFile, pcap_packet* packet) {
+    if (!more(pcapFile))
+        return 0;
+
+    //Position of filestream should be on the next header. Read it and the data.
+    if (read(pcapFile->fd, &(packet->header), sizeof (pcap_packet_header))
+            != sizeof (pcap_packet_header)) {
+        fprintf(stderr,
+                "Hit EOF reading header, but should have seen it coming.\n");
+        return 0;
+    }
+    
+
+    //Determine the length of this packet and allocate appropriately.
+    packet->payload.size = packet->header.incl_len;
+    if (packet->payload.size < 1) {
+        fprintf(stderr, "Packet length less than 1?\n");
+        return 0;
+    }
+
+    packet->payload.data = malloc(packet->payload.size);
+
+    if (read(pcapFile->fd, packet->payload.data, packet->payload.size)
+            != packet->payload.size) {
+        fprintf(stderr,
+                "Hit EOF reading data, but should have seen it coming.\n");
+        unloadPacket(packet);
+        return 0;
+    }
+
     return 1;
 }
 
-int readPacket(pcap_file* pcapFile, pcap_packet_header* packetHeader,
-        pcap_packet_data* packetData) {
-    return 0;
+int unloadPacket(pcap_packet* packet) {
+    if (packet == NULL)
+        return 0;
+
+
+    free(packet->payload.data);
 }
 
 int more(pcap_file* pcapFile) {
@@ -102,28 +140,27 @@ int more(pcap_file* pcapFile) {
     return (cur != end);
 }
 
-int debugAll(pcap_file* pcapFile) {
+int debug_printPackets(pcap_file* pcapFile) {
+    int ret = 1;
+
     printFile(pcapFile);
     printFileHeader(pcapFile->header);
 
-    pcap_packet_header* pph = malloc(sizeof (pcap_packet_header));
+    pcap_packet* ppk = malloc(sizeof (pcap_packet));
 
     //Read until we can't anymore.
     while (more(pcapFile)) {
-        //Position should be pointing to the next header...
-        if (read(pcapFile->fd, pph, sizeof (pcap_packet_header))
-                != sizeof (pcap_packet_header)) {
-            fprintf(stderr,
-                    "Hit EOF, but should have seen it coming.\n");
+        if (!readPacket(pcapFile, ppk)) {
+            ret = 0;
             break;
         }
 
-        printPacketHeader(pph);
-
-        //Advance by that much...
-        lseek(pcapFile->fd, pph->incl_len, SEEK_CUR);
+        printPacketHeader(&(ppk->header));
+        printPacketData(&(ppk->payload));
+        unloadPacket(ppk);
     }
 
-    free(pph);
-    return 1;
+
+    free(ppk);
+    return ret;
 }
