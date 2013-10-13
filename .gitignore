@@ -3,3 +3,4 @@
 /lib/
 /runtests/
 *.o
+/runtestslinked

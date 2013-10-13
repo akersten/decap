@@ -6,6 +6,11 @@ tests:
 	gcc -g -o runtests test/*.c src/*.c
 	./runtests
 
+libtests:
+	gcc -g -Llib/ -ldecap -o runtestslinked test/*.c
+	export LD_LIBRARY_PATH=lib/ ; \
+	./runtestslinked
+
 clean:
 	rm -f runtests
 	rm -f lib/*.so
